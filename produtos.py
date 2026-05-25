@@ -13,10 +13,10 @@ conexao = st.connection("postgresql", type="sql")
 product_name = st.text_input('Busca de Produtos')
 
 if product_name:
-    resultados = conexao.query("SELECT id_produto, foto, nome, qnt FROM produto WHERE nome ILIKE :busca", params={"busca": f"%{product_name}%"})
+    resultados = conexao.query("SELECT id_produto, foto, nome, qnt, preco_unitario FROM produto WHERE nome ILIKE :busca", params={"busca": f"%{product_name}%"})
 
 else:
-    resultados = conexao.query("SELECT id_produto, foto, nome, qnt FROM produto")
+    resultados = conexao.query("SELECT id_produto, foto, nome, qnt, preco_unitario FROM produto")
 
 colunas = st.columns(3)
 
@@ -25,6 +25,7 @@ for index, linha in resultados.iterrows():
     v_foto = "imagens/3maiores.png"
     v_nome = linha["nome"]
     v_qtd = linha["qnt"]
+    v_preco = linha["preco_unitario"]
 
     coluna_alvo = colunas[index % 3]
 
@@ -38,7 +39,7 @@ for index, linha in resultados.iterrows():
     """
         st.markdown(layout_texto, unsafe_allow_html=True)
         if st.button("Adicionar Carrinho", key=v_nome):
-            st.session_state["carrinho"].append({"id": v_id, "nome": v_nome, "foto": v_foto})
+            st.session_state["carrinho"].append({"id": v_id, "nome": v_nome, "foto": v_foto, "preco": v_preco})
             st.success(f"{v_nome} adicionado ao carrinho!")
 
 st.write(st.session_state["carrinho"])
