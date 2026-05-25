@@ -8,7 +8,6 @@ st.title("🛒 Aba do Carrinho")
 
 if "mensagem_sucesso" in st.session_state:
     st.success(st.session_state["mensagem_sucesso"])
-
     del st.session_state["mensagem_sucesso"]
 
 
@@ -64,6 +63,8 @@ if "meu_carrinho_id" in st.session_state:
         st.markdown(f"### 💵 Total do Pedido: R$ {total_geral}")
 
         if st.button("Finalizar a Compra"):
+            id_cliente = st.session_state.get("id_cliente", 1)
+
             with conexao.session as s:
 
                 sql_pedido = text("""
@@ -71,7 +72,7 @@ if "meu_carrinho_id" in st.session_state:
                     VALUES (:cliente, :frete, CURRENT_TIMESTAMP) 
                     RETURNING id_pedido;
                 """)
-                id_pedido_gerado = s.execute(sql_pedido, params={"cliente": 1, "frete": 0.0}).fetchone()[0]
+                id_pedido_gerado = s.execute(sql_pedido, params={"cliente": id_cliente, "frete": 0.0}).fetchone()[0]
 
                 for index, linha in resultados.iterrows():
                     sql_item = text("""
@@ -92,8 +93,7 @@ if "meu_carrinho_id" in st.session_state:
 
             del st.session_state["meu_carrinho_id"]
 
-            st.session_state[
-                "mensagem_sucesso"] = f"Compra finalizada com sucesso! Pedido gerado: Nº {id_pedido_gerado}"
+            st.session_state["mensagem_sucesso"] = f"Compra finalizada com sucesso! Pedido gerado: Nº {id_pedido_gerado}"
 
             st.rerun()
 

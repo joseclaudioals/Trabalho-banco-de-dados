@@ -11,6 +11,8 @@ if 'usuario_logado' not in st.session_state:
     st.session_state['usuario_logado'] = None
 if 'tipo_usuario' not in st.session_state:
     st.session_state['tipo_usuario'] = None
+if 'id_cliente' not in st.session_state:
+    st.session_state['id_cliente'] = None
 
 if st.session_state['usuario_logado'] is None:
     st.title("👙 Bem-vindo à Loja de Lingerie 👙")
@@ -26,14 +28,16 @@ if st.session_state['usuario_logado'] is None:
             if email_login == "admin@loja.com" and senha_login == "1234":
                 st.session_state['usuario_logado'] = "Administrador Geral"
                 st.session_state['tipo_usuario'] = 'Admin'
+                st.session_state['id_cliente'] = None
                 st.rerun()
             else:
                 with conexao.session as session:
-                    sql_login = text("SELECT nome_cliente FROM cliente WHERE email = :email AND senha = :senha")
+                    sql_login = text("SELECT id_cliente, nome_cliente FROM cliente WHERE email = :email AND senha = :senha")
                     resultado = session.execute(sql_login, {"email": email_login, "senha": senha_login}).fetchone()
 
                 if resultado:
-                    st.session_state['usuario_logado'] = resultado[0]
+                    st.session_state['id_cliente'] = resultado[0]
+                    st.session_state['usuario_logado'] = resultado[1]
                     st.session_state['tipo_usuario'] = 'Cliente'
                     st.rerun()
                 else:
@@ -78,6 +82,7 @@ else:
     if st.sidebar.button("Sair / Logout"):
         st.session_state['usuario_logado'] = None
         st.session_state['tipo_usuario'] = None
+        st.session_state['id_cliente'] = None
         st.rerun()
 
     if st.session_state['tipo_usuario'] == 'Cliente':

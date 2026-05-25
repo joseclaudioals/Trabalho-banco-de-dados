@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
-import psycopg2 as pg
 from sqlalchemy import text
 
-conn = st.connection("postgre", type="sql")
+conn = st.connection("postgresql", type="sql")
+
 tab1, tab2, tab3 = st.tabs(["Editar produtos", "Funções basicas","Logs de administrador"])
 
 with tab1:
@@ -52,7 +52,7 @@ with tab1:
             else:
                 log = text('''
                     INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
-                    VALUES (1, :id_produto, 'Alteração nas propriedades de um produto', NOW()); \
+                    VALUES (1, :id_produto, 'Alteração nas propriedades de um produto', NOW());
                 ''')
                 session.execute(log, {"id_produto": id})
 
@@ -95,7 +95,7 @@ with tab2:
         sql = '''
             SELECT * FROM produto;
         '''
-        df = conn.query(sql,ttl = 660)
+        df = conn.query(sql, ttl=660)
         st.dataframe(df)
 
     st.markdown("## Views")
@@ -124,6 +124,7 @@ with tab2:
             '''
             df = conn.query(sql, ttl=660)
             st.dataframe(df)
+
 with tab3:
     st.header("logs de administrador")
 

@@ -40,11 +40,13 @@ for index, linha in resultados.iterrows():
         if st.button("Adicionar Carrinho", key=f"btn_{v_id}"):
 
             try:
+                id_cliente = st.session_state.get("id_cliente", 1)
+
                 with conexao.session as s:
 
                     if "meu_carrinho_id" not in st.session_state:
-                        sql_criar = text("INSERT INTO carrinho (id_cliente, data_criacao) VALUES (1, CURRENT_TIMESTAMP) RETURNING id_carrinho;")
-                        id_gerado = s.execute(sql_criar).fetchone()[0]
+                        sql_criar = text("INSERT INTO carrinho (id_cliente, data_criacao) VALUES (:id_cliente, CURRENT_TIMESTAMP) RETURNING id_carrinho;")
+                        id_gerado = s.execute(sql_criar, {"id_cliente": id_cliente}).fetchone()[0]
                         s.commit()
                         st.session_state["meu_carrinho_id"] = id_gerado
 
