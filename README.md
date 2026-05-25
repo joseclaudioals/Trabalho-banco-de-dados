@@ -330,13 +330,13 @@ pip install streamlit psycopg2-binary sqlalchemy pandas
 2. Inicie a aplicação utilizando o comando do Streamlit no arquivo principal de roteamento:
 
 ```powershell
-streamlit run streamlit_app.py
+streamlit run main.py
 ```
 
 <aside>
 💡
 
-- *(Nota: o arquivo `streamlit_app.py` gerencia a navegação entre as páginas `main.py`, `adm.py`, `produtos.py` e `carrinho.py`)*
+- *(Nota: o arquivo `main.py` gerencia a navegação entre as páginas `main.py`, `adm.py`, `produtos.py` e `carrinho.py`)*
 </aside>
 
 - O seu navegador abrirá automaticamente em uma aba `http://localhost:8501`, onde você verá a tela de login inicial. Você poderá logar como administrador usando o e-mail `admin@loja.com` e a senha `1234`.
