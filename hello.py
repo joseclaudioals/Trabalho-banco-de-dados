@@ -2,4 +2,4 @@ import streamlit as st
 
 st.write("hello world")
 
-print(10)
+print("Farmei aula na escola")
