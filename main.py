@@ -93,13 +93,15 @@ else:
     pagina = st.sidebar.selectbox("Menu de Navegação", opcoes_menu)
     
     if pagina == "Produtos":
-        import produtos
-        importlib.reload(produtos)
+        with open("produtos.py", encoding="utf-8") as f:
+            exec(f.read(), globals())
+            
     elif pagina == "Carrinho":
-        import carrinho
-        importlib.reload(carrinho)
+        with open("carrinho.py", encoding="utf-8") as f:
+            exec(f.read(), globals())
+            
     elif pagina == "Administração":
-        import adm
-        importlib.reload(adm)
+        with open("adm.py", encoding="utf-8") as f:
+            exec(f.read(), globals())
 
 #streamlit run main.py
