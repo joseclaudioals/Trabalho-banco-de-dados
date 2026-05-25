@@ -342,6 +342,33 @@ erDiagram
 
 Realizar uma varredura (varredura de inventário) automatizada na tabela de produtos para identificar e alertar o administrador sobre itens que atingiram um nível crítico de escassez.
 
+    ```sql
+    CREATE OR REPLACE FUNCTION verificar_estoque_critico(p_limite INT)
+	RETURNS VOID AS $$
+
+	DECLARE
+	    v_reg RECORD;
+	BEGIN
+    
+    FOR v_reg IN
+        SELECT id_produto, nome, qnt
+        FROM produto
+        WHERE qnt < p_limite
+    LOOP
+
+        RAISE NOTICE 'ALERTA: Estoque em capacidade critica para produto %', v_reg.nome;
+    
+    END LOOP;
+    
+    RETURN;
+	END;
+	$$ 
+	LANGUAGE plpgsql;
+
+	-- Teste 1
+	SELECT verificar_estoque_critico(40);
+    ```
+
 - **Parâmetro de Entrada:** Recebe um número inteiro que define o limite numérico do que a empresa considera "estoque crítico".
 - **Retorno :** Como o objetivo principal é disparar uma ação/aviso interno e não devolver um dado bruto, ela é declarada como `VOID` (sem retorno). No PostgreSQL, funções com retorno `VOID` funcionam de forma análoga a uma `PROCEDURE`.
 - **A Estrutura de Loop :** A função abre um cursor implícito usando a variável especial `v_reg` do tipo `RECORD` (um tipo de dados dinâmico que consegue moldar-se a qualquer linha de resultado). O loop executa um `SELECT` filtrando os produtos cujo estoque está abaixo do limite informado.
@@ -354,6 +381,32 @@ Ao executar `SELECT verificar_estoque_critico(40);`, o banco percorre todos os p
 ### **Function `obter_categoria_cliente`**
 
 Transformar o histórico de compras de um cliente em uma classificação estratégica de marketing (CRM), categorizando-o em níveis de fidelidade com base no seu volume financeiro acumulado.
+
+    ```sql
+	CREATE OR REPLACE FUNCTION obter_categoria_cliente(p_id_cliente INT)
+	RETURNS VARCHAR AS $$
+	DECLARE 
+	    v_total_compra DECIMAL;
+	BEGIN
+	    SELECT COALESCE(sum(pp.quantidade_compra * pp.preco_unitario), 0) INTO v_total_compra
+	    FROM pedido p
+	    JOIN produto_pedido pp
+	    ON p.id_pedido = pp.id_pedido
+	    WHERE p_id_cliente = p.id_cliente;
+	
+	    IF v_total_compra > 1000.00 THEN
+	        RETURN 'Cliente: VIP';
+	    ELSIF v_total_compra > 500 AND v_total_compra <= 1000 THEN
+	        RETURN 'Cliente: PLATINUM';
+	    ELSE 
+	        RETURN 'Cliente: STANDART';
+	    END IF;
+	END;
+	$$ LANGUAGE plpgsql;
+	
+	-- Teste 2
+	SELECT obter_categoria_cliente(1);
+    ```
 
 - **Parâmetro de Entrada (`p_id_cliente`):** Recebe o ID do cliente que se deseja analisar.
 - **Cálculo de Consumo (`SELECT INTO`):** Cruza a tabela de `pedido` com `produto_pedido` para somar todo o dinheiro que o cliente já movimentou no e-commerce. A função `COALESCE(..., 0)` é usada estrategicamente para garantir que, se um cliente for novo e nunca tiver comprado nada, o resultado seja `0` em vez de `NULL` (o que quebraria as validações matemáticas adiante).
@@ -369,6 +422,31 @@ Ao executar `SELECT obter_categoria_cliente(1);`, a função avalia as compras d
 ### **Function `calcular_total_pedido`**
 
 **Objetivo Central:** Centralizar a regra de negócio matemática que calcula o custo total final de uma nota de venda, consolidando o somatório de todos os produtos adquiridos adicionado à taxa de entrega (frete).
+
+    ```sql
+	   -- Function 3
+	CREATE OR REPLACE FUNCTION calcular_total_pedido(p_id_pedido INT)
+	RETURNS DECIMAL AS $$
+	DECLARE
+	    v_total DECIMAL;
+	BEGIN
+	    SELECT
+	        COALESCE(SUM(pp.quantidade_compra * pp.preco_unitario), 0) + p.frete
+	    INTO v_total
+	    FROM produto_pedido pp
+	    LEFT JOIN pedido p ON p.id_pedido = pp.id_pedido 
+	    WHERE p.id_pedido = p_id_pedido
+	    GROUP BY p.frete;    
+	
+	    RETURN v_total;
+	END;
+	$$ 
+	
+	LANGUAGE plpgsql;
+	
+	-- Teste 3
+	SELECT calcular_total_pedido(1);
+    ```
 
 - **Parâmetro de Entrada:** Recebe o código identificador do pedido que precisa ser faturado.
 - **Retorno:** Devolve um valor monetário exato e preciso para o sistema chamador.
