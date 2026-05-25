@@ -50,12 +50,6 @@ with tab1:
             if resultado.rowcount == 0:
                 st.warning(f"Alerta: o ID {id} nao foi encontrado, nenhuma alteração feita")
             else:
-                log = text('''
-                    INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
-                    VALUES (1, :id_produto, 'Alteração nas propriedades de um produto', NOW()); \
-                ''')
-                session.execute(log, {"id_produto": id})
-
                 session.commit()
 
                 st.success("Alteração realizada com sucesso")
@@ -130,14 +124,13 @@ with tab3:
     if st.button("Ver logs de administrador"):
 
         sql = '''
-            SELECT f.nome_funcionario as Funcionario_responsavel, 
+            SELECT COALESCE(f.nome_funcionario, 'Sistema (Trigger)') as Funcionario_responsavel, 
                    p.nome as Produto_modificado, 
                    a.descricao_auditoria
-            FROM funcionario f
-            JOIN auditoria a
-            ON f.id_funcionario = a.id_funcionario
-            JOIN produto p
-            ON p.id_produto = a.id_produto
+            FROM auditoria a
+            LEFT JOIN funcionario f ON f.id_funcionario = a.id_funcionario
+            JOIN produto p ON p.id_produto = a.id_produto
+            ORDER BY a.data_auditoria DESC;
         '''
 
         df = conn.query(sql, ttl=120)
