@@ -1,13 +1,12 @@
 import streamlit as st
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 st.markdown("# Produtos")
 st.sidebar.markdown("# Produtos")
-
-st.title("📦Aba dos Produtos")
+st.title("📦 Aba dos Produtos")
 
 conexao = st.connection("postgresql", type="sql")
-
 product_name = st.text_input('Busca de Produtos')
 
 if product_name:
@@ -33,24 +32,34 @@ for index, linha in resultados.iterrows():
         layout_texto = f"""
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px; margin-right: 25px;">
             <strong>{v_nome}</strong>
-            <span>Qtd: {v_qtd}</span>
+            <span>Estoque: {v_qtd}</span>
         </div>
         """
         st.markdown(layout_texto, unsafe_allow_html=True)
 
         if st.button("Adicionar Carrinho", key=v_nome):
 
-            with conexao.session as s:
+            try:
+                with conexao.session as s:
 
-                sql = text("""
-                    INSERT INTO carrinho_produto (id_carrinho, id_produto, qtd_produto_carrinho) 
-                    VALUES (:carrinho, :produto, 1)
-                    ON CONFLICT (id_carrinho, id_produto) 
-                    DO UPDATE SET qtd_produto_carrinho = carrinho_produto.qtd_produto_carrinho + 1;
-                """)
+                    if "meu_carrinho_id" not in st.session_state:
+                        sql_criar = text("INSERT INTO carrinho (id_cliente, data_criacao) VALUES (1, CURRENT_TIMESTAMP) RETURNING id_carrinho;")
+                        id_gerado = s.execute(sql_criar).fetchone()[0]
+                        s.commit()
+                        st.session_state["meu_carrinho_id"] = id_gerado
 
-                s.execute(sql, params={"carrinho": 1, "produto": v_id})
+                    carrinho_dinamico = st.session_state["meu_carrinho_id"]
 
-                s.commit()
+                    sql_upsert = text("""
+                        INSERT INTO carrinho_produto (id_carrinho, id_produto, qtd_produto_carrinho) 
+                        VALUES (:carrinho, :produto, 1)
+                        ON CONFLICT (id_carrinho, id_produto) 
+                        DO UPDATE SET qtd_produto_carrinho = carrinho_produto.qtd_produto_carrinho + 1;
+                    """)
+                    s.execute(sql_upsert, params={"carrinho": carrinho_dinamico, "produto": v_id})
+                    s.commit()
 
-            st.success(f"{v_nome} adicionado ao carrinho no banco de dados!")
+                st.success(f"{v_nome} adicionado ao carrinho!")
+
+            except SQLAlchemyError as e:
+                st.error(f"⚠️ O PostgreSQL barrou por este motivo: {e}")
