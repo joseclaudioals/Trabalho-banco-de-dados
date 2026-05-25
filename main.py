@@ -96,3 +96,5 @@ else:
     elif pagina == "Administração":
         import adm
         importlib.reload(adm)
+
+#streamlit run main.py
