@@ -3,7 +3,7 @@ from sqlalchemy import text
 
 st.markdown("# Carrinho")
 st.sidebar.markdown("# Carrinho")
-st.title("🛒 Meu Carrinho")
+st.title("🛒 Aba do Carrinho")
 
 
 if "mensagem_sucesso" in st.session_state:
