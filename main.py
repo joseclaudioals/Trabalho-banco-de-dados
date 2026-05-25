@@ -15,7 +15,7 @@ if 'id_cliente' not in st.session_state:
     st.session_state['id_cliente'] = None
 
 if st.session_state['usuario_logado'] is None:
-    st.title("👙 Bem-vindo à Loja de Lingerie 👙")
+    st.title("👙Bem-vindo à Loja de Lingerie👙")
 
     aba_login, aba_cadastro = st.tabs(["Login", "Cadastrar Cliente"])
 

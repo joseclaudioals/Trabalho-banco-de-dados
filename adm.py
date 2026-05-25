@@ -7,6 +7,61 @@ conn = st.connection("postgresql", type="sql")
 tab1, tab2, tab3 = st.tabs(["Editar produtos", "Funções basicas","Logs de administrador"])
 
 with tab1:
+    st.header("Adicionar produtos")
+    with st.form(key="adicionar_produtos"):
+        # nome
+        nome = st.text_input("Nome do produto")
+        # descricao
+        descricao = st.text_input("Decrição do produto")
+        # cor
+        cor = st.text_input("Cor do produto")
+        # tamanho
+        tamanho = st.selectbox("Tamanho do produto", ("pp", "p", "m", "g", "gg"))
+        # preco unitario
+        preco = st.number_input("Preco do produto")
+
+        estoque = st.number_input("Estoque", value=0,step=1)
+
+        bt_criar = st.form_submit_button("Adicionar")
+
+    if bt_criar:
+        sql = text('''
+            INSERT INTO produto
+                (nome,
+                descricao,
+                cor, 
+                tamanho,
+                preco_unitario,
+                qnt
+                )
+            VALUES(
+                :nome,
+                :descricao,
+                :cor,
+                :tamanho,
+                :preco,
+                :estoque
+                );
+        '''
+        )
+
+        parametros={
+            "nome": nome,
+            "descricao": descricao,
+            "cor": cor,
+            "tamanho": tamanho,
+            "preco": preco,
+            "estoque": estoque
+        }
+
+        with conn.session as session:
+            resultado = session.execute(sql, parametros)
+
+            session.commit()
+
+            st.success("Produto adicionado com sucesso")
+            st.cache_data.clear()
+    
     st.header("Editar produtos")
 
     with st.form(key="editar_produtos"):
@@ -69,6 +124,13 @@ with tab2:
         n = st.number_input("quantidade de items", value=0, step=1)
 
         bt = st.form_submit_button("buscar")
+
+    if st.button("Ver todos os clientes"):
+        sql = '''
+            SELECT id_cliente,email, nome_cliente FROM cliente;
+        '''
+        df = conn.query(sql,ttl = 660)
+        st.dataframe(df)
 
     if bt:
         sql = '''

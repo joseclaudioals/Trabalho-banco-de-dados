@@ -63,39 +63,42 @@ if "meu_carrinho_id" in st.session_state:
         st.markdown(f"### 💵 Total do Pedido: R$ {total_geral}")
 
         if st.button("Finalizar a Compra"):
-            id_cliente = st.session_state.get("id_cliente", 1)
+            id_cliente = st.session_state.get("id_cliente")
 
-            with conexao.session as s:
+            if not id_cliente:
+                st.error("Nenhum cliente logado. Faça login antes de finalizar a compra.")
+            else:
+                with conexao.session as s:
 
-                sql_pedido = text("""
-                    INSERT INTO pedido (id_cliente, frete, data_pedido) 
-                    VALUES (:cliente, :frete, CURRENT_TIMESTAMP) 
-                    RETURNING id_pedido;
-                """)
-                id_pedido_gerado = s.execute(sql_pedido, params={"cliente": id_cliente, "frete": 0.0}).fetchone()[0]
-
-                for index, linha in resultados.iterrows():
-                    sql_item = text("""
-                        INSERT INTO produto_pedido (id_pedido, id_produto, quantidade_compra, preco_unitario) 
-                        VALUES (:pedido, :produto, :qtd, :preco);
+                    sql_pedido = text("""
+                        INSERT INTO pedido (id_cliente, frete, data_pedido) 
+                        VALUES (:cliente, :frete, CURRENT_TIMESTAMP) 
+                        RETURNING id_pedido;
                     """)
-                    s.execute(sql_item, params={
-                        "pedido": id_pedido_gerado,
-                        "produto": linha["id_produto"],
-                        "qtd": linha["qtd_produto_carrinho"],
-                        "preco": linha["preco_unitario"]
-                    })
+                    id_pedido_gerado = s.execute(sql_pedido, params={"cliente": id_cliente, "frete": 0.0}).fetchone()[0]
 
-                sql_limpar_carrinho = text("DELETE FROM carrinho_produto WHERE id_carrinho = :id_carrinho;")
-                s.execute(sql_limpar_carrinho, params={"id_carrinho": carrinho_dinamico})
+                    for index, linha in resultados.iterrows():
+                        sql_item = text("""
+                            INSERT INTO produto_pedido (id_pedido, id_produto, quantidade_compra, preco_unitario) 
+                            VALUES (:pedido, :produto, :qtd, :preco);
+                        """)
+                        s.execute(sql_item, params={
+                            "pedido": id_pedido_gerado,
+                            "produto": linha["id_produto"],
+                            "qtd": linha["qtd_produto_carrinho"],
+                            "preco": linha["preco_unitario"]
+                        })
 
-                s.commit()
+                    sql_limpar_carrinho = text("DELETE FROM carrinho_produto WHERE id_carrinho = :id_carrinho;")
+                    s.execute(sql_limpar_carrinho, params={"id_carrinho": carrinho_dinamico})
 
-            del st.session_state["meu_carrinho_id"]
+                    s.commit()
 
-            st.session_state["mensagem_sucesso"] = f"Compra finalizada com sucesso! Pedido gerado: Nº {id_pedido_gerado}"
+                del st.session_state["meu_carrinho_id"]
 
-            st.rerun()
+                st.session_state["mensagem_sucesso"] = f"Compra finalizada com sucesso! Pedido gerado: Nº {id_pedido_gerado}"
+
+                st.rerun()
 
     else:
         st.warning("O seu carrinho está vazio no banco de dados no momento.")
