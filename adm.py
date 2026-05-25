@@ -55,6 +55,24 @@ with tab1:
                 st.success("Alteração realizada com sucesso")
                 st.cache_data.clear()
 
+    st.header("Deletar produto")
+    with st.form(key = "deletar_produtos"):
+        id = st.number_input("Id do produto", value=0, step=1)
+        bt_deletar = st.form_submit_button("Deletar")
+    if bt_deletar:
+        sql = text("DELETE FROM produto WHERE id_prduto = :id")
+
+        with conn.session as session:
+            resultado = session.execute(sql, {"id": id})
+
+            if resultado.rowcount == 0:
+                st.warning(f"Alerta: O produto com ID {id} não foi encontrado. Nada foi deletado.");
+            else:
+                session.commit()
+
+                st.success(f"Sucesso! {resultado.rowcount} produto(s) removido(s) do banco.")
+                st.cache_data.clear()
+
 with tab2:
     st.header("Funções basicas")
 
