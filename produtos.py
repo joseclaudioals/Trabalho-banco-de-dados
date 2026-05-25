@@ -1,7 +1,5 @@
 import streamlit as st
-
-if "carrinho" not in st.session_state:
-    st.session_state["carrinho"] = []
+from sqlalchemy import text
 
 st.markdown("# Produtos")
 st.sidebar.markdown("# Produtos")
@@ -13,8 +11,9 @@ conexao = st.connection("postgresql", type="sql")
 product_name = st.text_input('Busca de Produtos')
 
 if product_name:
-    resultados = conexao.query("SELECT id_produto, foto, nome, qnt, preco_unitario FROM produto WHERE nome ILIKE :busca", params={"busca": f"%{product_name}%"})
-
+    resultados = conexao.query(
+        "SELECT id_produto, foto, nome, qnt, preco_unitario FROM produto WHERE nome ILIKE :busca",
+        params={"busca": f"%{product_name}%"})
 else:
     resultados = conexao.query("SELECT id_produto, foto, nome, qnt, preco_unitario FROM produto")
 
@@ -36,10 +35,22 @@ for index, linha in resultados.iterrows():
             <strong>{v_nome}</strong>
             <span>Qtd: {v_qtd}</span>
         </div>
-    """
+        """
         st.markdown(layout_texto, unsafe_allow_html=True)
-        if st.button("Adicionar Carrinho", key=v_nome):
-            st.session_state["carrinho"].append({"id": v_id, "nome": v_nome, "foto": v_foto, "preco": v_preco})
-            st.success(f"{v_nome} adicionado ao carrinho!")
 
-st.write(st.session_state["carrinho"])
+        if st.button("Adicionar Carrinho", key=v_nome):
+
+            with conexao.session as s:
+
+                sql = text("""
+                    INSERT INTO carrinho_produto (id_carrinho, id_produto, qtd_produto_carrinho) 
+                    VALUES (:carrinho, :produto, 1)
+                    ON CONFLICT (id_carrinho, id_produto) 
+                    DO UPDATE SET qtd_produto_carrinho = carrinho_produto.qtd_produto_carrinho + 1;
+                """)
+
+                s.execute(sql, params={"carrinho": 1, "produto": v_id})
+
+                s.commit()
+
+            st.success(f"{v_nome} adicionado ao carrinho no banco de dados!")
