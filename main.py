@@ -1,18 +1,11 @@
 import streamlit as st
-import psycopg2
 import datetime
 import importlib
-
-def conectar_banco():
-    return psycopg2.connect(
-        host="localhost",
-        database="ecommerce",
-        user="postgres",
-        password="1234",
-        port="5432"
-    )
+from sqlalchemy import text
 
 st.set_page_config(page_title="Loja de Lingerie", page_icon="👙")
+
+conexao = st.connection("postgresql", type="sql")
 
 if 'usuario_logado' not in st.session_state:
     st.session_state['usuario_logado'] = None
@@ -35,11 +28,9 @@ if st.session_state['usuario_logado'] is None:
                 st.session_state['tipo_usuario'] = 'Admin'
                 st.rerun()
             else:
-                conn = conectar_banco()
-                cur = conn.cursor()
-
-                cur.execute("SELECT nome_cliente FROM cliente WHERE email = %s AND senha = %s", (email_login, senha_login))
-                resultado = cur.fetchone()
+                with conexao.session as session:
+                    sql_login = text("SELECT nome_cliente FROM cliente WHERE email = :email AND senha = :senha")
+                    resultado = session.execute(sql_login, {"email": email_login, "senha": senha_login}).fetchone()
 
                 if resultado:
                     st.session_state['usuario_logado'] = resultado[0]
@@ -47,9 +38,6 @@ if st.session_state['usuario_logado'] is None:
                     st.rerun()
                 else:
                     st.error("Email ou senha incorretos!")
-                
-                cur.close()
-                conn.close()
 
     with aba_cadastro:
         st.subheader("Novo Cliente")
@@ -67,21 +55,24 @@ if st.session_state['usuario_logado'] is None:
 
             if submit_cadastro:
                 try:
-                    conn = conectar_banco()
-                    cur = conn.cursor()
-                    cur.execute("""
-                        INSERT INTO cliente (email, senha, nome_cliente, data_nascimento, telefone, cep, numero_casa)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, (email_cad, senha_cad, nome_cad, nasc_cad, telefone_cad, cep_cad, num_cad))
-                    conn.commit()
+                    with conexao.session as session:
+                        sql_cadastro = text("""
+                            INSERT INTO cliente (email, senha, nome_cliente, data_nascimento, telefone, cep, numero_casa)
+                            VALUES (:email, :senha, :nome, :nasc, :tel, :cep, :num)
+                        """)
+                        session.execute(sql_cadastro, {
+                            "email": email_cad,
+                            "senha": senha_cad,
+                            "nome": nome_cad,
+                            "nasc": nasc_cad,
+                            "tel": telefone_cad,
+                            "cep": cep_cad,
+                            "num": num_cad
+                        })
+                        session.commit()
                     st.success("Cadastro realizado com sucesso! Vá para a aba Login.")
                 except Exception as e:
-                    conn.rollback()
                     st.error(f"Erro ao salvar no banco: {e}")
-                finally:
-                    cur.close()
-                    conn.close()
-
 else:
     st.sidebar.title(f"Olá, {st.session_state['usuario_logado']} 👋")
     if st.sidebar.button("Sair / Logout"):

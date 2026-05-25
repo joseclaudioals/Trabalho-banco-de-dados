@@ -37,7 +37,7 @@ for index, linha in resultados.iterrows():
         """
         st.markdown(layout_texto, unsafe_allow_html=True)
 
-        if st.button("Adicionar Carrinho", key=v_nome):
+        if st.button("Adicionar Carrinho", key=f"btn_{v_id}"):
 
             try:
                 with conexao.session as s:
