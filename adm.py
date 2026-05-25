@@ -92,11 +92,32 @@ with tab2:
 
 
     if st.button("Ver todos os produtos"):
-
         sql = '''
             SELECT * FROM produto;
         '''
         df = conn.query(sql,ttl = 660)
+        st.dataframe(df)
+
+    st.markdown("##Views")
+    if st.button("Ver cargo do funcionario"):
+        sql = '''
+            SELECT * FROM funcionario_cargo;
+        '''
+        df = conn.query(sql, ttl=660)
+        st.dataframe(df)
+
+    if st.button("Ver tamanho do produto"):
+        sql = '''
+            SELECT * FROM tamanho_produto;
+        '''
+        df = conn.query(sql, ttl=660)
+        st.dataframe(df)
+
+    if st.button("Ver fechamento financeiro"):
+        sql = '''
+            SELECT * FROM fechamento_financeiro;
+        '''
+        df = conn.query(sql, ttl=660)
         st.dataframe(df)
 with tab3:
     st.header("logs de administrador")
