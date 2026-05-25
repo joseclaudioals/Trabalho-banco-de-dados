@@ -240,8 +240,6 @@ Ao tentar rodar o comando `INSERT INTO carrinho_produto ... VALUES (1, 1, 200);`
 
 **Objetivo Central:** Criar um histórico imutável (log) de todas as ações importantes realizadas no catálogo de produtos. Ela rastreia quem nasce, quem muda e quem morre no sistema.
 
-### Como ela funciona passo a passo:
-
 - **Momento do Disparo (`AFTER INSERT OR UPDATE OR DELETE`):** Ao contrário da primeira, esta roda **depois** que a ação já foi consolidada com sucesso na tabela `produto`. Faz sentido, pois só devemos auditar o que realmente aconteceu.
 - **Identificação do Evento (`TG_OP`):** A variável especial `TG_OP` (Trigger Operation) descobre qual comando disparou o gatilho (`INSERT`, `UPDATE` ou `DELETE`) e direciona o código para o bloco correto:
     - **Cenário `INSERT`:** Quando um novo produto é criado, a trigger captura seus dados (`NEW.nome` e `NEW.preco_unitario`) e insere uma linha descritiva na tabela `auditoria` com a data/hora exata do servidor (`NOW()`).
@@ -313,6 +311,27 @@ Para testar este projeto localmente, você precisará preparar o ambiente de ban
     - Tabelas: `cliente`, `produto`, `carrinho`, `carrinho_produto`, `pedido`, `produto_pedido`, `funcionario`, `auditoria`.
     - Views: `funcionario_cargo`, `tamanho_produto`, `fechamento_financeiro`.
     - Funções (Functions/Procedures): `verificar_estoque_critico()`, `obter_categoria_cliente()`.
+  
+<aside>
+💡
+
+Durante a implementação da interface grafica e backend notou-se um erro estrutural de modelagem do banco de dados onde:
+
+- A tabela auditoria continha uma chave estrangeira para tabela “cargos” ao invés da tabela “funcionários”
+
+Assim não era possível identificar o responsável pela auditoria das tabelas produto, quebrando uma regra de negocio. Para contornar este erro foi executado o script:
+
+```sql
+alter table auditoria drop constraint fk_auditoria_adm;
+alter table auditoria 
+add constraint 
+ fk_auditoria_adm foreign key(id_cargo)
+	references funcionario(id_funcionario);
+
+alter table auditoria rename column id_cargo to id_funcionario;
+```
+
+</aside>
 
 ### Passo 2: Preparar o Ambiente Python
 
