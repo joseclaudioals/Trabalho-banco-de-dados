@@ -38,12 +38,16 @@ with tab1:
         resultado = conn.session.execute(sql, {"nome": nome, "descricao": descricao, "tamanho": tamanho, "preco": preco, "id": id })
         conn.session.commit()
 
-
-
         if resultado.rowcount == 0:
             st.warning(f"Alerta: o ID {id} nao foi encontrado, nenhuma alteração feita")
         else:
             st.sucess("Alteração realizada com sucesso")
+            log = '''
+                  INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
+                  VALUES (1, :id_produto, 1, "Alteração nas propriedades de um produto", :tempo_agora); \
+                  '''
+
+            conn.session.execute(log, {id, int(time.time())})
 
 with tab2:
     st.header("Funções basicas")
@@ -84,3 +88,16 @@ with tab2:
         st.dataframe(df)
 with tab3:
     st.header("logs de administrador")
+    sql = '''
+        SELECT f.nome_funcionario as Funcionario_responsavel, 
+               p.nome as Produto_modificado, 
+               a.descricao_auditoria
+        FROM funcionario f
+        JOIN auditoria a
+        ON f.id_funcionario = a.id_funcionario
+        JOIN produto p
+        ON f.id_produto = p.id_produto
+    '''
+
+    df = conn.query(sql, ttl=660)
+    st.dataframe(df)
