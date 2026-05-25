@@ -133,44 +133,207 @@ erDiagram
     
     A tabela de cargos atua como uma entidade de domínio estrutural do sistema. Sua função é mapear a hierarquia organizacional da empresa responsável pelo ecommerce, armazenando as nomenclaturas oficiais das funções, suas respectivas descrições de atividades e o salário base estipulado para a posição. Esta tabela garante a padronização dos cargos atribuídos aos colaboradores.
     
+    ```sql
+    create table cargo(
+    id_cargo serial,
+    nome_cargo varchar(50) not null,
+    descricao_cargo varchar(255),
+    salario decimal(8,2), 
+    
+    constraint pk_cargo primary key (id_cargo)
+    );
+    ```
+    
 - Tabela funcionario
     
     Esta entidade é responsável por gerenciar o quadro de colaboradores da empresa. Ela armazena informações de identificação pessoal, como nome e CPF, além de dados de contato (e-mail e telefone) com validações rigorosas de formato. Através de um relacionamento de chave estrangeira com a tabela cargo, o sistema define o papel de cada
     funcionário na operação do negócio, mantendo a integridade dos dados de recursos humanos.
+    
+    ```sql
+    create table funcionario(
+    id_funcionario serial,
+    nome_funcionario varchar(150) not null,
+    cpf_funcionario varchar(11),
+    email_funcionario varchar(150),
+    telefone_funcionario varchar(11),
+    id_cargo int,
+    
+    constraint pk_funcionario primary key (id_funcionario),
+    constraint uk_cpf_funcionario unique(cpf_funcionario),
+    constraint uk_email_funcionario unique(email_funcionario),
+    constraint chk_telefone_funcionario check(telefone_funcionario ~ '^\d{10,11}$'),
+    constraint fk_funcionario_cargo foreign key (id_cargo) references cargo(id_cargo)
+    );
+    ```
     
 - Tabela produto
     
     O núcleo do catálogo do e-commerce é representado por esta tabela. Ela centraliza todas as informações físicas e comerciais dos itens disponíveis para venda, incluindo nome, descrição, tamanho (limitado a uma grade padronizada), cor, preço atual de venda e quantidade disponível em estoque. Restrições do banco de dados garantem que não
     existam preços ou estoques com valores negativos, protegendo a lógica comercial da loja.
     
+    ```sql
+    create table produto(
+    id_produto serial,
+    descricao varchar(150),
+    foto varchar(255),
+    cor varchar(20) not null,
+    nome varchar(30) not null,
+    tamanho varchar(2) not null,
+    preco_unitario decimal (8,2) not null,
+    qnt integer,
+    
+    constraint pk_produto primary key (id_produto),
+    constraint chk_tamanho check (tamanho in('pp', 'p', 'm', 'g', 'gg')),
+    constraint chk_preco check(preco_unitario>=0),
+    constraint chk_qnt check(qnt>=0)
+    );
+    ```
+    
 - Tabela auditoria
     
     Projetada para garantir a rastreabilidade e a segurança do sistema, a tabela de auditoria funciona como um log de eventos. Ela registra alterações, atualizações ou inspeções sistêmicas, vinculando cada evento a um produto ou a um cargo, juntamente com
     uma descrição textual e o registro exato de data e hora (timestamp). Isso permite aos gestores monitorar o histórico de modificações no banco de dados.
     
+    ```sql
+    create table auditoria(
+    id_auditoria serial,
+    id_funcionario int,
+    id_produto int,
+    descricao_auditoria varchar(120),
+    data_auditoria timestamp,
+    
+    constraint pk_auditoria primary key(id_auditoria),
+    constraint fk_produto_auditoria foreign key (id_produto)
+    	references produto(id_produto),
+    constraint fk_auditoria_adm foreign key(id_funcionario)
+    	references funcionario(id_funcionario)
+    );
+    ```
+    
 - Tabela cliente
     
     Esta tabela armazena o cadastro dos usuários finais da plataforma (compradores). Ela consolida informações críticas de acesso (e-mail único e senha) e dados demográficos essenciais para a operação comercial, como data de nascimento, telefone e endereço (CEP e número). A entidade utiliza expressões regulares para garantir que os dados de contato sejam inseridos no formato correto, garantindo a comunicação eficiente com o consumidor.
+    
+    ```sql
+    create table cliente(
+    id_cliente serial not null,
+    email VARCHAR(30) not null,
+    senha VARCHAR(30) not null,
+    nome_cliente VARCHAR(30) not null,
+    data_nascimento DATE not null,
+    telefone CHAR(11) not null,
+    cep CHAR(8) not null,
+    numero_casa VARCHAR(10) not null,
+    
+    constraint pk_cliente primary key(id_cliente),
+    constraint uk_email unique(email),
+    constraint chk_telefone_cliente check(telefone ~ '^\d{10,11}$'),
+    constraint chk_cep_client check(cep ~ '^\d{8}$')
+    );
+    ```
     
 - Tabela forma_pagamento
     
     Destinada ao módulo financeiro do cliente, esta entidade armazena os métodos de pagamento (como cartões de crédito ou contas) cadastrados pelos usuários. Ela possui uma forte dependência da tabela cliente, configurada de modo que, caso o registro de um usuário seja removido da plataforma, todos os seus dados sensíveis de pagamento sejam automaticamente excluídos em cascata, respeitando princípios de privacidade de dados.
     
+    ```sql
+    create table forma_pagamento(
+    id_forma_pagamento serial,
+    id_cliente INT not null,
+    numero_banco CHAR(16) not null,
+    endereco_cobranca VARCHAR(10) not null,
+    
+    constraint pk_cartao primary key(id_forma_pagamento),
+    constraint fk_cartao_cliente foreign key (id_cliente)
+    	references cliente(id_cliente)
+    	on delete cascade
+    	on update cascade
+    );
+    ```
+    
 - Tabela carrinho
     
     A tabela de carrinho atua como o cabeçalho de uma sessão de comprasem andamento. Ela registra o momento exato em que um cliente inicia a intenção de compra na loja virtual. Sendo uma entidade de transição, ela prepara o terreno para agrupar os itens desejados antes que eles se tornem um pedido definitivo.
+    
+    ```sql
+    create table forma_pagamento(
+    id_forma_pagamento serial,
+    id_cliente INT not null,
+    numero_banco CHAR(16) not null,
+    endereco_cobranca VARCHAR(10) not null,
+    
+    constraint pk_cartao primary key(id_forma_pagamento),
+    constraint fk_cartao_cliente foreign key (id_cliente)
+    	references cliente(id_cliente)
+    	on delete cascade
+    	on update cascade
+    );
+    ```
     
 - Tabela carrinho_produto
     
     Trata-se de uma entidade associativa que resolve o relacionamento de muitos-para-muitos entre carrinhos e produtos. Sua função é listar os itens específicos que um cliente colocou em seu carrinho de compras e a quantidade desejada de cada um. Ela foi modelada para garantir que, caso o carrinho seja esvaziado ou o produto descontinuado, a associação seja desfeita sem deixar dados residuais no sistema.
     
+    ```sql
+    create table carrinho_produto(
+    id_carrinho INT,
+    id_produto INT,
+    qtd_produto_carrinho int not null,
+    
+    constraint chk_qtd_produto_carrinho check(qtd_produto_carrinho>0),
+    constraint pk_carrinho_produto primary key (id_carrinho, id_produto),
+    constraint fk_produto1 foreign key (id_produto) 
+    	references produto(id_produto)
+    	on delete cascade 
+    	on update  cascade,
+    constraint fk_carrinho2 foreign key (id_carrinho) 
+    	references carrinho(id_carrinho)
+    	on delete  cascade 
+    	on update  cascade
+    	
+    );
+    ```
+    
 - Tabela pedido
     
     A entidade de pedido consolida a conversão de um carrinho em uma compra formalizada. Ela gera um identificador único para a transação, registra a data exata da finalização do checkout e armazena o custo do frete calculado para a entrega. O relacionamento com a tabela de clientes é restrito, impedindo que um cliente seja excluído do banco de dados se ele possuir um histórico de pedidos finalizados, o que preserva a integridade contábil e fiscal do e-commerce.
     
+    ```sql
+    create table pedido(
+    id_pedido serial,
+    id_cliente INT not null,
+    data_pedido TIMESTAMP not null,
+    frete decimal(5, 2),
+    
+    constraint pk_pedido1 primary key (id_pedido),
+    constraint fk_pedido_cliente foreign key (id_cliente) 
+    	references cliente(id_cliente)
+    	on delete restrict 
+    	on update cascade 
+    );
+    ```
+    
 - Tabela produto_pedido
     
     Esta é a tabela mais crítica para a integridade financeira do histórico de vendas. Como uma entidade associativa entre pedidos e produtos, ela não apenas lista os itens comprados e suas quantidades, mas funciona como um "retrato" (snapshot) da transação. Ao registrar o preco_unitario do item no momento exato da compra, ela assegura que futuras flutuações no valor do produto na tabela principal não alterem retrospectivamente o valor total dos recibos e notas fiscais já emitidos aos clientes.
+    
+    ```sql
+    create table produto_pedido(
+    id_pedido INT,
+    id_produto INT,
+    quantidade_compra int not null,
+    preco_unitario decimal(8,2) not null,
+    constraint pk_pedido_produto primary key (id_pedido, id_produto),
+    constraint fk_pedido_produto foreign key (id_pedido) 
+    	references pedido(id_pedido)
+    	on update cascade
+    	on delete cascade,
+    constraint fk_produto_pedido foreign key (id_produto) 
+    	references produto(id_produto)
+    	on delete restrict
+    	on update cascade
+    );
+    ```
     
 
 ## As functions
@@ -221,6 +384,35 @@ Ao executar `SELECT calcular_total_pedido(1);`, o motor do banco calcula o Pedid
 
 **Objetivo Central:** Atuar como uma barreira de segurança automatizada, impedindo que um cliente adicione ao carrinho uma quantidade de produtos maior do que a empresa possui fisicamente no estoque.
 
+```sql
+CREATE OR REPLACE FUNCTION validar_estoque_carrinho()
+RETURNS TRIGGER AS $$
+DECLARE
+    estoque_atual INT;
+BEGIN
+    SELECT qnt INTO estoque_atual 
+    FROM produto 
+    WHERE id_produto = NEW.id_produto;
+
+    IF NEW.qtd_produto_carrinho > estoque_atual THEN
+        RAISE EXCEPTION 'Estoque insuficiente para (ID: %). Disponível: %, Solicitado: %.', 
+            NEW.id_produto, estoque_atual, NEW.qtd_produto_carrinho;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_estoque_carrinho
+BEFORE INSERT OR UPDATE ON carrinho_produto
+FOR EACH ROW
+EXECUTE FUNCTION validar_estoque_carrinho();
+
+-- Teste 1
+INSERT INTO carrinho_produto (id_carrinho, id_produto, qtd_produto_carrinho) 
+VALUES (1, 1, 200);
+```
+
 ### Como ela funciona passo a passo:
 
 - **Momento do Disparo (`BEFORE INSERT OR UPDATE`):** O gatilho é acionado **antes** que o dado seja efetivamente gravado ou modificado na tabela `carrinho_produto`. Isso é estratégico: se houver um erro, o banco barra a operação antes de gastar recursos processando a gravação.
@@ -240,6 +432,47 @@ Ao tentar rodar o comando `INSERT INTO carrinho_produto ... VALUES (1, 1, 200);`
 
 **Objetivo Central:** Criar um histórico imutável (log) de todas as ações importantes realizadas no catálogo de produtos. Ela rastreia quem nasce, quem muda e quem morre no sistema.
 
+```sql
+CREATE OR REPLACE FUNCTION auditar_alteracoes_produto()
+RETURNS TRIGGER AS $$
+BEGIN
+
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
+        VALUES (NULL, NEW.id_produto, 'PRODUTO CADASTRADO: Nome: ' || NEW.nome || ' | Preço: R$ ' || NEW.preco_unitario, NOW());
+        RETURN NEW;
+
+    ELSIF (TG_OP = 'UPDATE') THEN
+        IF (OLD.preco_unitario IS DISTINCT FROM NEW.preco_unitario OR OLD.qnt IS DISTINCT FROM NEW.qnt) THEN
+            INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
+            VALUES (
+                NULL, 
+                NEW.id_produto, 
+                'PRODUTO ALTERADO -> Preço Antigo: R$ ' || OLD.preco_unitario || ' | Novo: R$ ' || NEW.preco_unitario ||
+                ' -- Estoque Antigo: ' || OLD.qnt || ' | Novo: ' || NEW.qnt, 
+                NOW()
+            );
+        END IF;
+        RETURN NEW;
+
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
+        VALUES (NULL, OLD.id_produto, 'PRODUTO EXCLUÍDO DO SISTEMA -> Nome: ' || OLD.nome, NOW());
+        RETURN OLD;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_auditoria_produto
+AFTER INSERT OR UPDATE OR DELETE ON produto
+FOR EACH ROW
+EXECUTE FUNCTION auditar_alteracoes_produto();
+
+-- Teste 2
+UPDATE produto SET preco_unitario = 55.00, qnt = 90 WHERE id_produto = 1;
+SELECT * FROM auditoria;
+```
+
 - **Momento do Disparo (`AFTER INSERT OR UPDATE OR DELETE`):** Ao contrário da primeira, esta roda **depois** que a ação já foi consolidada com sucesso na tabela `produto`. Faz sentido, pois só devemos auditar o que realmente aconteceu.
 - **Identificação do Evento (`TG_OP`):** A variável especial `TG_OP` (Trigger Operation) descobre qual comando disparou o gatilho (`INSERT`, `UPDATE` ou `DELETE`) e direciona o código para o bloco correto:
     - **Cenário `INSERT`:** Quando um novo produto é criado, a trigger captura seus dados (`NEW.nome` e `NEW.preco_unitario`) e insere uma linha descritiva na tabela `auditoria` com a data/hora exata do servidor (`NOW()`).
@@ -255,6 +488,18 @@ Ao executar o comando `UPDATE produto SET preco_unitario = 55.00, qnt = 90 WHERE
 ### View `funcionario_cargo`
 
 **Objetivo Central:** Simplificar o acesso à folha de colaboradores da empresa, ocultando a complexidade do relacionamento de chaves estrangeiras e omitindo dados sensíveis dos funcionários (como CPF e Telefone).
+```sql
+-- View 2
+CREATE OR REPLACE VIEW tamanho_produto AS
+	SELECT nome,
+	id_produto,
+	tamanho
+	FROM produto
+	where tamanho = 'gg';
+
+-- Teste 2
+SELECT * FROM tamanho_produto;
+```
 
 - **A Estrutura Interna (`INNER JOIN`):** A visão realiza o cruzamento clássico entre as tabelas `funcionario` e `cargo` através do campo em comum `id_cargo`.
 - **Abstração de Dados:** Ela filtra a junção para projetar apenas duas colunas na tela: o nome do colaborador e o nome do cargo dele.
@@ -267,6 +512,19 @@ Ao executar `SELECT * FROM funcionario_cargo;`, em vez de você ter que digitar 
 
 **Objetivo Central:** Criar um atalho ou subset de dados focado estritamente em uma regra de negócio específica do inventário — neste caso, isolar os produtos de tamanho "Extra Grande" (`gg`).
 
+```sql
+-- View 2
+CREATE OR REPLACE VIEW tamanho_produto AS
+	SELECT nome,
+	id_produto,
+	tamanho
+	FROM produto
+	where tamanho = 'gg';
+
+-- Teste 2
+SELECT * FROM tamanho_produto;
+```
+
 - **Restrição por Cláusula `WHERE`:** Esta View atua diretamente sobre uma única tabela . Ela limita o conjunto de resultados através do filtro `WHERE tamanho = 'gg'`.
 - **Projeção de Colunas:** Ela seleciona apenas o nome, o ID e o tamanho do item, deixando de lado colunas como preço, cor, quantidade em estoque ou foto.
 
@@ -277,6 +535,21 @@ Ao rodar `SELECT * FROM tamanho_produto;`, o sistema trará apenas os registros 
 ### View `fechamento_financeiro` (Módulo Contábil e de Vendas)
 
 **Objetivo Central:** Encapsular um cálculo analítico complexo de faturamento. Ela transforma linhas de itens vendidos em relatórios consolidados de receita por venda de forma imediata.
+
+```sql
+-- View 3
+CREATE OR REPLACE VIEW fechamento_financeiro as
+	select 
+		pedido.id_pedido,
+    	pedido.frete,
+	SUM(produto_pedido.quantidade_compra * produto_pedido.preco_unitario) + pedido.frete AS valor_total_pedido
+	FROM pedido inner join produto_pedido
+	on pedido.id_pedido = produto_pedido.id_pedido
+	GROUP BY pedido.id_pedido, pedido.frete;
+
+-- Teste 3
+SELECT * FROM fechamento_financeiro;
+```
 
 - **Cálculo Agregado e Expressão Matemática:** A View realiza a multiplicação interna de `quantidade_compra * preco_unitario` para cada item de um pedido, soma todos eles através do `SUM()` e adiciona o valor do frete (`+ pedido.frete`).
 - **Consolidação por `GROUP BY`:** Para que a função de agregação funcione corretamente sem misturar os pedidos, o banco de dados agrupa os resultados pelo identificador do pedido e pelo valor do frete (`GROUP BY pedido.id_pedido, pedido.frete`).
