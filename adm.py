@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import psycopg2 as pg
-import time
+from sqlalchemy import text
 
 conn = st.connection("postgre", type="sql")
 tab1, tab2, tab3 = st.tabs(["Editar produtos", "Funções basicas","Logs de administrador"])
@@ -19,7 +19,7 @@ with tab1:
         # cor
         cor = st.text_input("Cor do produto")
         # tamanho
-        tamanho = st.number_input("Tamanho do produto", value=0, step = 1 )
+        tamanho = st.selectbox("Tamanho do produto", ("pp", "p", "m", "g", "gg"))
         # preco unitario
         preco = st.number_input("Preco do produto")
 
@@ -35,19 +35,31 @@ with tab1:
             WHERE id_produto = :id;
         ''')
 
-        resultado = conn.session.execute(sql, {"nome": nome, "descricao": descricao, "tamanho": tamanho, "preco": preco, "id": id })
-        conn.session.commit()
+        parametros = {
+            "nome": nome,
+            "descricao": descricao,
+            "cor": cor,
+            "tamanho": tamanho,
+            "preco": preco,
+            "id": id
+        }
 
-        if resultado.rowcount == 0:
-            st.warning(f"Alerta: o ID {id} nao foi encontrado, nenhuma alteração feita")
-        else:
-            st.sucess("Alteração realizada com sucesso")
-            log = '''
-                  INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
-                  VALUES (1, :id_produto, 1, "Alteração nas propriedades de um produto", :tempo_agora); \
-                  '''
+        with conn.session as session:
+            resultado = session.execute(sql, parametros)
 
-            conn.session.execute(log, {id, int(time.time())})
+            if resultado.rowcount == 0:
+                st.warning(f"Alerta: o ID {id} nao foi encontrado, nenhuma alteração feita")
+            else:
+                log = text('''
+                    INSERT INTO auditoria (id_funcionario, id_produto, descricao_auditoria, data_auditoria)
+                    VALUES (1, :id_produto, 'Alteração nas propriedades de um produto', NOW()); \
+                ''')
+                session.execute(log, {"id_produto": id})
+
+                session.commit()
+
+                st.success("Alteração realizada com sucesso")
+                st.cache_data.clear()
 
 with tab2:
     st.header("Funções basicas")
@@ -88,16 +100,19 @@ with tab2:
         st.dataframe(df)
 with tab3:
     st.header("logs de administrador")
-    sql = '''
-        SELECT f.nome_funcionario as Funcionario_responsavel, 
-               p.nome as Produto_modificado, 
-               a.descricao_auditoria
-        FROM funcionario f
-        JOIN auditoria a
-        ON f.id_funcionario = a.id_funcionario
-        JOIN produto p
-        ON f.id_produto = p.id_produto
-    '''
 
-    df = conn.query(sql, ttl=660)
-    st.dataframe(df)
+    if st.button("Ver logs de administrador"):
+
+        sql = '''
+            SELECT f.nome_funcionario as Funcionario_responsavel, 
+                   p.nome as Produto_modificado, 
+                   a.descricao_auditoria
+            FROM funcionario f
+            JOIN auditoria a
+            ON f.id_funcionario = a.id_funcionario
+            JOIN produto p
+            ON p.id_produto = a.id_produto
+        '''
+
+        df = conn.query(sql, ttl=120)
+        st.dataframe(df)
