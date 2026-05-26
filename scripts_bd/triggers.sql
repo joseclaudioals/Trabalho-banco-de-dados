@@ -22,11 +22,11 @@ BEFORE INSERT OR UPDATE ON carrinho_produto
 FOR EACH ROW
 EXECUTE FUNCTION validar_estoque_carrinho();
 
--- Teste 1
 INSERT INTO carrinho_produto (id_carrinho, id_produto, qtd_produto_carrinho) 
 VALUES (1, 1, 200);
 
 -- Trigger 2
+
 CREATE OR REPLACE FUNCTION auditar_alteracoes_produto()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -62,6 +62,8 @@ AFTER INSERT OR UPDATE OR DELETE ON produto
 FOR EACH ROW
 EXECUTE FUNCTION auditar_alteracoes_produto();
 
--- Teste 2
-UPDATE produto SET preco_unitario = 55.00, qnt = 90 WHERE id_produto = 1;
+UPDATE produto 
+SET preco_unitario = 55.00, qnt = 90 
+WHERE id_produto = 1;
+
 SELECT * FROM auditoria;

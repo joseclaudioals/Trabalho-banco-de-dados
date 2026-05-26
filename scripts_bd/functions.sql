@@ -1,4 +1,3 @@
--- Function 1
 CREATE OR REPLACE FUNCTION verificar_estoque_critico(p_limite INT)
 RETURNS VOID AS $$
 
@@ -21,10 +20,8 @@ END;
 $$ 
 LANGUAGE plpgsql;
 
--- Teste 1
 SELECT verificar_estoque_critico(40);
 
--- Function 2
 CREATE OR REPLACE FUNCTION obter_categoria_cliente(p_id_cliente INT)
 RETURNS VARCHAR AS $$
 DECLARE 
@@ -49,7 +46,6 @@ $$ LANGUAGE plpgsql;
 -- Teste 2
 SELECT obter_categoria_cliente(1);
 
--- Function 3
 CREATE OR REPLACE FUNCTION calcular_total_pedido(p_id_pedido INT)
 RETURNS DECIMAL AS $$
 DECLARE

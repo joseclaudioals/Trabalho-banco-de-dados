@@ -1,6 +1,6 @@
-create database ecommerce;
+CREATE DATABASE ecommerce;
 
-create table cargo(
+CREATE TABLE cargo(
 id_cargo serial,
 nome_cargo varchar(50) not null,
 descricao_cargo varchar(255),
@@ -9,7 +9,7 @@ salario decimal(8,2),
 constraint pk_cargo primary key (id_cargo)
 );
 
-create table funcionario(
+CREATE TABLE funcionario(
 id_funcionario serial,
 nome_funcionario varchar(150) not null,
 cpf_funcionario varchar(11),
@@ -24,7 +24,7 @@ constraint chk_telefone_funcionario check(telefone_funcionario ~ '^\d{10,11}$'),
 constraint fk_funcionario_cargo foreign key (id_cargo) references cargo(id_cargo)
 );
 
-create table produto(
+CREATE TABLE produto(
 id_produto serial,
 descricao varchar(150),
 foto varchar(255),
@@ -40,7 +40,7 @@ constraint chk_preco check(preco_unitario>=0),
 constraint chk_qnt check(qnt>=0)
 );
 
-create table auditoria(
+CREATE TABLE auditoria(
 id_auditoria serial,
 id_funcionario int,
 id_produto int,
@@ -51,10 +51,10 @@ constraint pk_auditoria primary key(id_auditoria),
 constraint fk_produto_auditoria foreign key (id_produto)
 	references produto(id_produto),
 constraint fk_auditoria_adm foreign key(id_funcionario)
-	references cargo(id_funcionario)
+	references funcionario(id_funcionario)
 );
 
-create table cliente(
+CREATE TABLE cliente(
 id_cliente serial not null,
 email VARCHAR(30) not null,
 senha VARCHAR(30) not null,
@@ -70,7 +70,7 @@ constraint chk_telefone_cliente check(telefone ~ '^\d{10,11}$'),
 constraint chk_cep_client check(cep ~ '^\d{8}$')
 );
 
-create table forma_pagamento(
+CREATE TABLE forma_pagamento(
 id_forma_pagamento serial,
 id_cliente INT not null,
 numero_banco CHAR(16) not null,
@@ -83,7 +83,7 @@ constraint fk_cartao_cliente foreign key (id_cliente)
 	on update cascade
 );
 
-create table carrinho(
+CREATE TABLE carrinho(
 id_carrinho serial,
 id_cliente INT not null,
 data_criacao TIMESTAMP not null,
@@ -95,7 +95,7 @@ constraint fk_carrinho_cliente foreign key (id_cliente)
 	on update cascade 
 );
 
-create table carrinho_produto(
+CREATE TABLE carrinho_produto(
 id_carrinho INT,
 id_produto INT,
 qtd_produto_carrinho int not null,
@@ -110,10 +110,9 @@ constraint fk_carrinho2 foreign key (id_carrinho)
 	references carrinho(id_carrinho)
 	on delete  cascade 
 	on update  cascade
-	
 );
 
-create table pedido(
+CREATE TABLE pedido(
 id_pedido serial,
 id_cliente INT not null,
 data_pedido TIMESTAMP not null,
@@ -126,7 +125,7 @@ constraint fk_pedido_cliente foreign key (id_cliente)
 	on update cascade 
 );
 
-create table produto_pedido(
+CREATE TABLE produto_pedido(
 id_pedido INT,
 id_produto INT,
 quantidade_compra int not null,
